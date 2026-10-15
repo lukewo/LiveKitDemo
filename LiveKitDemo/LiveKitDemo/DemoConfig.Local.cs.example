@@ -1,0 +1,14 @@
+// Copy to DemoConfig.Local.cs (git-ignored) and fill in your LiveKit project's
+// API key and secret (LiveKit Cloud -> Settings -> Keys). The app then generates
+// access tokens itself. DEMO ONLY: real apps get tokens from a backend.
+namespace LiveKitDemo
+{
+    public static partial class DemoConfig
+    {
+        static partial void LoadLocalSettings()
+        {
+            ApiKey = "<your API key>";
+            ApiSecret = "<your API secret>";
+        }
+    }
+}

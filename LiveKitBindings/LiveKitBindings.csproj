@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{435C2456-94D9-412A-BC51-C02C44665F25}</ProjectGuid>
+    <ProjectTypeGuids>{10368E6C-D01B-4462-8E8B-01FC667A7035};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TemplateGuid>{77efb91c-a7e9-4b0e-a7c5-31eeec3c6d46}</TemplateGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>LiveKitBindings</RootNamespace>
+    <AssemblyName>LiveKitBindings</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>True</Deterministic>
+    <AndroidUseLatestPlatformSdk>false</AndroidUseLatestPlatformSdk>
+    <TargetFrameworkVersion>v13.0</TargetFrameworkVersion>
+    <AndroidClassParser>class-parse</AndroidClassParser>
+    <AndroidCodegenTarget>XAJavaInterop1</AndroidCodegenTarget>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Mono.Android" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+
+  <!--
+    Official Microsoft bindings for Kotlin. These supply the C# types (Continuation,
+    Function1, Flow, Unit...) that LiveKit's public API is built from. Pinned to the
+    newest versions that still ship a MonoAndroid target; later versions are .NET-only.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Xamarin.Kotlin.StdLib" Version="1.9.23" />
+    <PackageReference Include="Xamarin.Kotlin.StdLib.Jdk7" Version="1.9.23" />
+    <PackageReference Include="Xamarin.Kotlin.StdLib.Jdk8" Version="1.9.23" />
+    <PackageReference Include="Xamarin.KotlinX.Coroutines.Core.Jvm" Version="1.8.0.1" />
+    <PackageReference Include="Xamarin.KotlinX.Coroutines.Android" Version="1.8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Additions\KotlinCoroutines.cs" />
+    <Compile Include="Additions\LiveKitExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Jars\AboutJars.txt" />
+    <None Include="Additions\AboutAdditions.txt" />
+  </ItemGroup>
+
+  <!--
+    LiveKit Android SDK 2.29.0 and its Maven dependencies. Regenerate with:
+        tools\fetch-livekit\gradlew fetch      (downloads into Jars\maven)
+        tools\prepare-jars.ps1                 (produces Jars\bind, embed, native)
+  -->
+
+  <!-- Bound: generates C# API. -->
+  <ItemGroup>
+    <LibraryProjectZip Include="Jars\bind\livekit-android-2.29.0.aar" />
+    <!-- WebRTC (livekit.org.webrtc.*): SurfaceViewRenderer, VideoSink, EglBase are part of LiveKit's API. -->
+    <EmbeddedJar Include="Jars\bind\webrtc-144.7559.14.jar" />
+  </ItemGroup>
+
+  <!-- Packaged into the app, no C# API generated. -->
+  <ItemGroup>
+    <EmbeddedReferenceJar Include="Jars\embed\*.jar" />
+    <EmbeddedNativeLibrary Include="Jars\native\**\*.so" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TransformFile Include="Transforms\Metadata.xml" />
+    <TransformFile Include="Transforms\EnumFields.xml" />
+    <TransformFile Include="Transforms\EnumMethods.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Build\StripNonPublicInterfaces.targets" />
+    <None Include="Build\StripNonPublicInterfaces.xslt" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.Bindings.targets" />
+  <!-- Keeps io.livekit.android.room.Room from being dropped. Must come after the import above. -->
+  <Import Project="Build\StripNonPublicInterfaces.targets" />
+</Project>

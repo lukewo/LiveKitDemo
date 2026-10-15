@@ -1,0 +1,76 @@
+// Dev-time downloader only. Resolves the full transitive closure of the LiveKit
+// Android SDK from Maven and copies the raw .aar/.jar files into LiveKitBindings.
+// Nothing from this project ships in the solution; it exists so the dependency
+// list never has to be hand-maintained.
+//
+//   gradlew fetch
+//
+// POM-only metadata (metadataSources below) makes Gradle resolve exactly like
+// Maven would, so we get one .aar or .jar per module with no AGP variant
+// attributes involved.
+
+plugins {
+    id 'base'
+}
+
+ext.livekitVersion = '2.29.0'
+
+repositories {
+    mavenCentral {
+        metadataSources { mavenPom(); artifact() }
+    }
+    maven {
+        url 'https://repo.maven.apache.org/maven2'
+        metadataSources { mavenPom(); artifact() }
+    }
+    // com.github.davidliu:audioswitch is only published on JitPack.
+    maven {
+        url 'https://jitpack.io'
+        metadataSources { mavenPom(); artifact() }
+    }
+    google {
+        metadataSources { mavenPom(); artifact() }
+    }
+}
+
+configurations {
+    livekit
+}
+
+dependencies {
+    livekit "io.livekit:livekit-android:${livekitVersion}"
+}
+
+// Raw, untouched Maven artifacts. tools\prepare-jars.ps1 turns these into the
+// layout the binding project consumes.
+def outDir = file('../../LiveKitBindings/Jars/maven')
+
+tasks.register('fetch') {
+    group = 'livekit'
+    description = 'Downloads livekit-android and all transitive dependencies into LiveKitBindings/Jars/maven.'
+
+    doLast {
+        outDir.deleteDir()
+        outDir.mkdirs()
+
+        def report = new StringBuilder()
+        report.append("LiveKit Android SDK ${livekitVersion}\n")
+        report.append("Resolved ").append(new Date().format('yyyy-MM-dd')).append("\n\n")
+
+        def resolved = configurations.livekit.resolvedConfiguration
+            .lenientConfiguration.getArtifacts { true }
+            .sort { it.moduleVersion.id.toString() }
+
+        resolved.each { artifact ->
+            def id = artifact.moduleVersion.id
+            def target = new File(outDir, artifact.file.name)
+            target.bytes = artifact.file.bytes
+            report.append(String.format('%-70s %s%n',
+                "${id.group}:${id.name}:${id.version}", target.name))
+        }
+
+        new File(outDir, 'DEPENDENCIES.txt').text = report.toString()
+        println report
+        println "Wrote ${resolved.size()} artifacts to ${outDir}"
+    }
+}

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Replaces Xamarin.Android's _ExportJarToXml target (from
+  Xamarin.Android.Bindings.ClassParse.targets, Xamarin.Android 13.2) with an identical
+  copy that adds one step: StripNonPublicInterfaces.xslt runs on the class-parse
+  output before the API XML adjuster resolves types. See the .xslt for why.
+
+  Must be imported AFTER Xamarin.Android.Bindings.targets so this definition wins.
+  If you upgrade Xamarin.Android, diff against the original target.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="_ExportJarToXml"
+      DependsOnTargets="_ExtractJavadocsFromJavaSourceJars"
+      Inputs="@(EmbeddedJar);@(EmbeddedReferenceJar);@(InputJar);@(ReferenceJar);@(_AndroidMSBuildAllProjects);$(MSBuildThisFileDirectory)StripNonPublicInterfaces.xslt"
+      Outputs="$(ApiOutputFile)">
+
+    <ItemGroup>
+      <_AndroidDocumentationPath Include="@(_JavaSourceJavadocXml)" />
+      <_AndroidDocumentationPath Include="@(JavaDocIndex->'%(RootDir)\%(Directory)')" />
+      <_AndroidDocumentationPath Include="$(JavaDocPaths)" />
+      <_AndroidDocumentationPath Include="$(Java7DocPaths)" />
+      <_AndroidDocumentationPath Include="$(Java8DocPaths)" />
+      <_AndroidDocumentationPath Include="$(DroidDocPaths)" />
+      <_AndroidDocumentationPath Include="@(JavaDocJar->'$(IntermediateOutputPath)javadocs\%(FileName)')" />
+    </ItemGroup>
+    <ClassParse
+        OutputFile="$(ApiOutputFile).class-parse"
+        SourceJars="@(EmbeddedJar);@(InputJar)"
+        DocumentationPaths="@(_AndroidDocumentationPath)"
+        NetCoreRoot="$(NetCoreRoot)"
+        ToolPath="$(MonoAndroidToolsDirectory)"
+        ToolExe="$(ClassParseToolExe)"
+    />
+
+    <!-- Added step. -->
+    <XslTransformation
+        XmlInputPaths="$(ApiOutputFile).class-parse"
+        XslInputPath="$(MSBuildThisFileDirectory)StripNonPublicInterfaces.xslt"
+        OutputPaths="$(ApiOutputFile).class-parse.patched" />
+
+    <BindingsGenerator
+        OnlyRunXmlAdjuster="true"
+        XmlAdjusterOutput="$(ApiOutputFile)"
+        OutputDirectory="$(GeneratedOutputPath)src"
+        AndroidApiLevel="$(_AndroidApiLevel)"
+        ApiXmlInput="$(ApiOutputFile).class-parse.patched"
+        ReferencedManagedLibraries="@(ReferencePath);@(ReferenceDependencyPaths)"
+        MonoAndroidFrameworkDirectories="$(_XATargetFrameworkDirectories)"
+        NetCoreRoot="$(NetCoreRoot)"
+        ToolPath="$(MonoAndroidToolsDirectory)"
+        ToolExe="$(BindingsGeneratorToolExe)"
+        Nullable="$(Nullable)"
+        UseJavaLegacyResolver="$(_AndroidUseJavaLegacyResolver)"
+    />
+
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)class-parse.rsp" />
+      <FileWrites Include="$(ApiOutputFile).class-parse.patched" />
+      <FileWrites Condition="Exists ('$(IntermediateOutputPath)java-resolution-report.log')" Include="$(IntermediateOutputPath)java-resolution-report.log" />
+    </ItemGroup>
+  </Target>
+
+</Project>

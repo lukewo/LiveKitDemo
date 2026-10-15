@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:LiveKitDemo.Controls"
+             x:Class="LiveKitDemo.MainPage"
+             Title="LiveKit Demo">
+
+    <Grid Padding="16" RowSpacing="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />  <!-- url -->
+            <RowDefinition Height="Auto" />  <!-- room + name -->
+            <RowDefinition Height="Auto" />  <!-- token (optional) -->
+            <RowDefinition Height="Auto" />  <!-- connect / disconnect -->
+            <RowDefinition Height="Auto" />  <!-- copy 2nd-participant token -->
+            <RowDefinition Height="Auto" />  <!-- toggles -->
+            <RowDefinition Height="Auto" />  <!-- status -->
+            <RowDefinition Height="Auto" />  <!-- participants -->
+            <RowDefinition Height="*" />     <!-- video -->
+        </Grid.RowDefinitions>
+
+        <Entry x:Name="UrlEntry" Grid.Row="0"
+               Placeholder="Server URL (wss://your-project.livekit.cloud)"
+               Keyboard="Url" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+               AutomationProperties.Name="LiveKit server URL" />
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Entry x:Name="RoomEntry" Grid.Column="0" Placeholder="Room"
+                   IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+                   AutomationProperties.Name="Room name" />
+            <Entry x:Name="NameEntry" Grid.Column="1" Placeholder="Your name"
+                   IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+                   AutomationProperties.Name="Your name" />
+        </Grid>
+
+        <Entry x:Name="TokenEntry" Grid.Row="2"
+               Placeholder="Access token (optional, generated if empty)"
+               IsPassword="True" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+               AutomationProperties.Name="LiveKit access token, optional" />
+
+        <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Button x:Name="ConnectButton" Grid.Column="0" Text="Connect" Clicked="OnConnectClicked" />
+            <Button x:Name="DisconnectButton" Grid.Column="1" Text="Disconnect" Clicked="OnDisconnectClicked" IsEnabled="False" />
+        </Grid>
+
+        <Button x:Name="CopyGuestTokenButton" Grid.Row="4"
+                Text="Copy token for a 2nd participant"
+                Clicked="OnCopyGuestTokenClicked"
+                AutomationProperties.HelpText="Copies a token for the same room so you can join from meet.livekit.io" />
+
+        <Grid Grid.Row="5" ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
+            <Switch x:Name="MicSwitch" Grid.Column="0" IsEnabled="False" Toggled="OnMicToggled"
+                    AutomationProperties.Name="Microphone" />
+            <Label Grid.Column="1" Text="Microphone" VerticalOptions="Center" />
+            <Switch x:Name="CameraSwitch" Grid.Column="2" IsEnabled="False" Toggled="OnCameraToggled"
+                    AutomationProperties.Name="Camera" />
+            <Label Grid.Column="3" Text="Camera" VerticalOptions="Center" />
+        </Grid>
+
+        <Label x:Name="StatusLabel" Grid.Row="6" Text="Disconnected" FontAttributes="Bold" />
+
+        <Label x:Name="ParticipantsLabel" Grid.Row="7" Text="Participants: none" LineBreakMode="WordWrap" />
+
+        <!--
+          Video-call layout: remote video fills the area, your camera is a small
+          square picture-in-picture in the bottom-right corner.
+          Both are SurfaceViews; the local one is drawn on top because
+          VideoViewRenderer calls SetZOrderMediaOverlay(true) for Source="Local".
+        -->
+        <!--
+          Outlines are a coloured container with Padding around each VideoView,
+          not a Frame/Border drawn on top: a SurfaceView punches through anything
+          drawn over it, but the padding area isn't covered by the surface, so the
+          container's background shows as the outline.
+        -->
+        <!--
+          Placeholders: when a feed has no video, its VideoView is hidden and a
+          placeholder is shown instead. (Overlaying a Label on a live SurfaceView
+          doesn't work for the local preview, which is drawn above the window.)
+        -->
+        <Grid Grid.Row="8">
+            <!-- Remote: full area, subtle grey outline -->
+            <Grid BackgroundColor="#5A5A5A" Padding="2">
+                <Grid BackgroundColor="#111111">
+                    <controls:VideoView x:Name="RemoteVideo" Source="Remote"
+                                        BackgroundColor="Black" IsVisible="False"
+                                        AutomationProperties.Name="Remote participant video" />
+
+                    <StackLayout x:Name="RemotePlaceholder" Spacing="12" Padding="24"
+                                 HorizontalOptions="Center" VerticalOptions="Center">
+                        <Frame x:Name="RemoteAvatar" BackgroundColor="#3A3F4B" HasShadow="False"
+                               CornerRadius="44" WidthRequest="88" HeightRequest="88" Padding="0"
+                               HorizontalOptions="Center" IsVisible="False">
+                            <Label x:Name="RemoteInitialLabel" TextColor="White" FontSize="36"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Frame>
+                        <Label x:Name="RemotePlaceholderTitle" TextColor="White" FontSize="18"
+                               FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label x:Name="RemotePlaceholderDetail" TextColor="#B0B0B0" FontSize="14"
+                               HorizontalTextAlignment="Center" />
+                    </StackLayout>
+                </Grid>
+            </Grid>
+
+            <!-- Local: small square bottom-right, white outline so it stands out over the remote video -->
+            <Grid BackgroundColor="White" Padding="2"
+                  WidthRequest="124" HeightRequest="124"
+                  HorizontalOptions="End" VerticalOptions="End"
+                  Margin="12">
+                <Grid BackgroundColor="#202020">
+                    <controls:VideoView x:Name="LocalVideo" Source="Local"
+                                        BackgroundColor="#202020" IsVisible="False"
+                                        AutomationProperties.Name="Your camera preview" />
+
+                    <StackLayout x:Name="LocalPlaceholder" Spacing="4"
+                                 HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label x:Name="LocalInitialLabel" TextColor="White" FontSize="32"
+                               FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                        <Label Text="Camera off" TextColor="#B0B0B0" FontSize="12"
+                               HorizontalTextAlignment="Center" />
+                    </StackLayout>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+
+</ContentPage>

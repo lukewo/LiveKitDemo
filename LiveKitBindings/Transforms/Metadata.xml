@@ -1,0 +1,44 @@
+﻿<metadata>
+  <!--
+    Fixups for LiveKit Android SDK 2.29.0 + WebRTC 144.7559.14.
+    Paths are against obj\Debug\api.xml.
+  -->
+
+  <!-- ===================================================================
+       Kotlin value-class mangled overloads.
+       getParticipantByIdentity(Participant.Identity) compiles to
+       getParticipantByIdentity-p2YI31Y(String), which collides in C# with the
+       plain getParticipantByIdentity(String) overload. Keep the plain one.
+       =================================================================== -->
+  <remove-node path="/api/package[@name='io.livekit.android.room']/class[@name='Room']/method[@name='getParticipantByIdentity-p2YI31Y']" />
+  <remove-node path="/api/package[@name='io.livekit.android.room']/class[@name='Room']/method[@name='getParticipantBySid-yvz9xIM']" />
+
+  <!-- ===================================================================
+       ParticipantListener is LiveKit-internal plumbing (only used via
+       Participant.setInternalListener). Its overloaded onTrackPublished /
+       onTrackUnpublished produce duplicate C# events. Room events are consumed
+       through Room.Events (a Flow) instead, so drop the interface.
+       =================================================================== -->
+  <remove-node path="/api/package[@name='io.livekit.android.room.participant']/interface[@name='ParticipantListener']" />
+  <remove-node path="/api/package[@name='io.livekit.android.room.participant']/class[@name='ParticipantListener.DefaultImpls']" />
+  <remove-node path="/api/package[@name='io.livekit.android.room']/class[@name='Room']/implements[@name='io.livekit.android.room.participant.ParticipantListener']" />
+  <remove-node path="/api/package[@name='io.livekit.android.room.participant']/class[@name='Participant']/method[@name='setInternalListener']" />
+  <remove-node path="/api/package[@name='io.livekit.android.room.participant']/class[@name='Participant']/method[@name='getInternalListener']" />
+  <remove-node path="/api/package[@name='io.livekit.android.room']/class[@name='Room']/method[starts-with(@name,'onTrack') or starts-with(@name,'onDataReceived') or starts-with(@name,'onMetadataChanged') or starts-with(@name,'onSpeakingChanged')]" />
+
+  <!-- ===================================================================
+       Internal utility. Kotlin's MutableMap bridge methods don't map onto
+       Java.Util.IMap cleanly. Not part of the usable API.
+       =================================================================== -->
+  <remove-node path="/api/package[@name='io.livekit.android.util']/class[@name='TTLMap']" />
+
+  <!-- ===================================================================
+       WebRTC fixups
+       =================================================================== -->
+  <!-- Public fields typed as package-private classes. -->
+  <remove-node path="/api/package[@name='livekit.org.webrtc.audio']/class[@name='JavaAudioDeviceModule']/field[@name='audioInput']" />
+  <remove-node path="/api/package[@name='livekit.org.webrtc.audio']/class[@name='JavaAudioDeviceModule']/field[@name='audioOutput']" />
+
+  <!-- StatsReport.Value.value would be a C# member named the same as its type. -->
+  <attr path="/api/package[@name='livekit.org.webrtc']/class[@name='StatsReport.Value']/field[@name='value']" name="managedName">ValueString</attr>
+</metadata>

@@ -1,0 +1,27 @@
+# ---- Secrets: LiveKit API key/secret live here, never commit ----
+DemoConfig.Local.cs
+
+# ---- Visual Studio / .NET build output ----
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+Resource.designer.cs.bak
+
+# ---- Gradle / Android SDK (tools/fetch-livekit) ----
+.gradle/
+# Gradle output only. Not a bare "build/": git on Windows is case-insensitive and
+# that would also ignore LiveKitBindings/Build/, which the binding needs.
+tools/fetch-livekit/build/
+local.properties
+
+# ---- Raw Maven downloads (re-create with tools/fetch-livekit/gradlew fetch) ----
+# The prepared Jars/bind, Jars/embed and Jars/native folders ARE committed,
+# so the solution builds straight after cloning.
+LiveKitBindings/Jars/maven/
+
+# ---- OS ----
+Thumbs.db
+.DS_Store
